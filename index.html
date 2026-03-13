@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>CNBC NICU · Discharge Summary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/docx@9.5.3/build/index.js"></script>
+<style>
+:root{
+  --navy:#1a3560;--navy2:#24478a;--navy3:#2d5bb5;
+  --teal:#0d9488;--teal2:#14b8a6;
+  --red:#dc2626;--amber:#d97706;
+  --bg:#f1f5f9;--surface:#ffffff;--surface2:#f8fafc;
+  --border:#dde4ef;--border2:#c5d0e6;
+  --text:#0f1c30;--text2:#4a5e7a;--text3:#8099b8;
+  --shadow:0 1px 4px rgba(26,53,96,.08),0 4px 16px rgba(26,53,96,.06);
+  --shadow2:0 2px 8px rgba(26,53,96,.12),0 8px 32px rgba(26,53,96,.10);
+  --r:14px;--r2:10px;--r3:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:15px;line-height:1.5;
+}
+
+/* HEADER */
+.hdr{
+  background:linear-gradient(150deg,#0e213f 0%,var(--navy) 45%,var(--navy2) 100%);
+  padding:20px 20px 0;position:relative;overflow:hidden;
+}
+.hdr::before{
+  content:'';position:absolute;top:-80px;right:-60px;
+  width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle,rgba(45,91,181,.35) 0%,transparent 70%);
+}
+.hdr-inner{max-width:640px;margin:0 auto;position:relative;z-index:1;}
+.hdr-top{display:flex;align-items:flex-start;gap:14px;padding-bottom:20px;}
+.hdr-icon{
+  width:52px;height:52px;border-radius:12px;flex-shrink:0;
+  background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+}
+.hdr-words{}
+.hdr-name{font-size:17px;font-weight:700;color:#fff;line-height:1.2;}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;}
+.hdr-chip{
+  display:inline-block;margin-top:7px;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);
+  border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;
+  color:rgba(255,255,255,.85);letter-spacing:.6px;text-transform:uppercase;
+}
+/* step bar */
+.steps{
+  display:flex;background:rgba(0,0,0,.25);
+  border-radius:10px 10px 0 0;margin-top:4px;overflow:hidden;
+}
+.step{
+  flex:1;text-align:center;padding:10px 4px;font-size:11px;font-weight:600;
+  color:rgba(255,255,255,.45);letter-spacing:.4px;text-transform:uppercase;
+  transition:all .3s;position:relative;cursor:default;
+}
+.step.active{color:#fff;background:rgba(255,255,255,.1);}
+.step.done{color:var(--teal2);}
+.step-dot{
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(255,255,255,.15);margin:0 auto 4px;
+  display:flex;align-items:center;justify-content:center;font-size:10px;
+}
+.step.active .step-dot{background:var(--navy3);}
+.step.done .step-dot{background:var(--teal);color:#fff;}
+
+/* MAIN */
+.main{max-width:640px;margin:0 auto;padding:20px 16px 40px;}
+
+/* SCREEN */
+.screen{display:none;animation:fadeUp .3s ease;}
+.screen.on{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARD */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--shadow);
+  padding:22px;margin-bottom:16px;
+}
+.card-title{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.card-desc{font-size:13px;color:var(--text2);line-height:1.5;}
+
+/* API KEY */
+.api-wrap{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--r3);padding:12px 14px;display:flex;align-items:center;gap:10px;
+  margin-bottom:0;
+}
+.api-wrap label{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px;}
+.api-input{
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:'DM Mono',monospace;font-size:12px;color:#fff;
+  min-width:0;
+}
+.api-input::placeholder{color:rgba(255,255,255,.25);}
+.api-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0;transition:background .3s;}
+.api-dot.on{background:#4ade80;}
+
+/* UPLOAD ZONE */
+.upload-zone{
+  border:2px dashed var(--border2);border-radius:var(--r2);
+  padding:36px 20px;text-align:center;cursor:pointer;
+  transition:all .2s;background:var(--surface2);position:relative;
+  -webkit-user-select:none;user-select:none;
+}
+.upload-zone:active,.upload-zone.drag{border-color:var(--navy3);background:#eff4ff;}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-big{font-size:44px;margin-bottom:10px;display:block;}
+.upload-h{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.upload-p{font-size:13px;color:var(--text2);}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;}
+.tag{background:var(--bg);border:1px solid var(--border2);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--text2);}
+
+/* UPLOAD BUTTONS */
+.upload-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;}
+.upload-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:22px 12px;border-radius:var(--r2);cursor:pointer;
+  border:2px solid var(--border2);background:var(--surface2);
+  transition:all .2s;font-family:inherit;
+}
+.upload-btn:active{transform:scale(.96);border-color:var(--navy3);background:#eff4ff;}
+.ubtn-icon{font-size:34px;line-height:1;}
+.ubtn-label{font-size:14px;font-weight:700;color:var(--navy);}
+.ubtn-sub{font-size:11px;color:var(--text2);}
+
+/* PREVIEWS */
+.prev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:16px;}
+.prev-item{position:relative;border-radius:var(--r3);overflow:hidden;aspect-ratio:3/4;background:#e2e8f0;border:1.5px solid var(--border);}
+.prev-item img{width:100%;height:100%;object-fit:cover;display:block;}
+.prev-rm{
+  position:absolute;top:3px;right:3px;width:20px;height:20px;
+  background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;
+  font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-weight:700;
+}
+.prev-lbl{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(26,53,96,.75);color:#fff;font-size:9px;
+  text-align:center;padding:2px;font-weight:600;
+}
+.prev-count{text-align:center;font-size:13px;color:var(--text2);margin-top:12px;}
+
+/* BUTTONS */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 24px;border:none;border-radius:var(--r2);
+  font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  transition:all .18s;width:100%;margin-top:14px;
+  -webkit-user-select:none;user-select:none;
+}
+.btn:active{transform:scale(.97);}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-navy:hover{background:var(--navy2);}
+.btn-navy:disabled{opacity:.4;cursor:not-allowed;}
+.btn-teal{background:var(--teal);color:#fff;}
+.btn-teal:hover{background:#0f766e;}
+.btn-outline{background:var(--surface);color:var(--navy);border:2px solid var(--navy);margin-top:10px;}
+.btn-sm{
+  padding:7px 14px;font-size:12px;font-weight:600;width:auto;margin:0;
+  border-radius:var(--r3);background:var(--bg);color:var(--navy);
+  border:1px solid var(--border2);cursor:pointer;font-family:inherit;
+  transition:all .15s;display:inline-flex;align-items:center;gap:5px;
+}
+.btn-sm:active{transform:scale(.95);}
+.btn-sm.copied{background:var(--teal);color:#fff;border-color:var(--teal);}
+
+/* PROGRESS */
+.prog-wrap{text-align:center;padding:48px 20px;}
+.prog-ring{
+  width:72px;height:72px;margin:0 auto 20px;
+  border:4px solid var(--border);border-top-color:var(--navy3);
+  border-radius:50%;animation:spin .9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.prog-sub{font-size:13px;color:var(--text2);}
+.prog-pages{font-size:12px;color:var(--text3);margin-top:8px;}
+
+/* ERROR */
+.err-box{
+  background:#fef2f2;border:1px solid #fecaca;border-radius:var(--r3);
+  padding:14px;margin-top:14px;display:none;
+}
+.err-box.on{display:block;}
+.err-title{font-size:13px;font-weight:700;color:var(--red);}
+.err-msg{font-size:12px;color:#ef4444;margin-top:3px;word-break:break-word;}
+
+/* PATIENT STRIP */
+.pt-strip{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);
+  border-radius:var(--r);padding:16px 20px;margin-bottom:16px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;
+}
+.pt-item .lbl{font-size:10px;color:rgba(255,255,255,.55);font-weight:600;letter-spacing:.6px;text-transform:uppercase;}
+.pt-item .val{font-size:14px;font-weight:700;color:#fff;margin-top:1px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;}
+.tab{
+  padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;
+  color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:all .2s;
+}
+.tab.on{color:var(--navy);border-bottom-color:var(--navy);}
+
+.tab-panel{display:none;}
+.tab-panel.on{display:block;}
+
+/* PORTAL BOX */
+.portal-box{
+  border:1px solid var(--border);border-radius:var(--r2);
+  margin-bottom:14px;overflow:hidden;
+}
+.pb-head{
+  background:var(--navy);padding:11px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.pb-title{font-size:12px;font-weight:700;color:#fff;letter-spacing:.4px;
+  text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.pb-num{
+  width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.18);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;color:#fff;
+}
+.pb-hint{font-size:11px;color:var(--text2);padding:8px 14px 4px;background:var(--surface2);}
+.pb-ta{
+  width:100%;min-height:110px;
+  font-family:'DM Mono',monospace;font-size:12px;line-height:1.7;
+  border:none;border-top:1px solid var(--border);outline:none;
+  padding:12px 14px;background:var(--surface);color:var(--text);
+  resize:vertical;
+}
+.pb-ta:focus{background:#fafcff;}
+.pb-foot{
+  background:var(--surface2);border-top:1px solid var(--border);
+  padding:6px 14px;display:flex;align-items:center;justify-content:space-between;
+}
+.pb-chars{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
+.warn-chars{color:var(--amber);}
+
+/* DOCX PANEL */
+.docx-panel{text-align:center;padding:40px 20px;}
+.docx-icon{font-size:64px;display:block;margin-bottom:14px;}
+.docx-title{font-size:19px;font-weight:800;color:var(--navy);margin-bottom:8px;}
+.docx-desc{font-size:13px;color:var(--text2);line-height:1.6;max-width:400px;margin:0 auto 24px;}
+.docx-features{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;text-align:left;
+}
+.df-item{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r3);padding:10px 12px;font-size:12px;color:var(--text2);
+}
+.df-item strong{color:var(--navy);display:block;font-size:12px;margin-bottom:2px;}
+
+/* DANGER SIGNS */
+.danger{
+  background:#fef2f2;border:1.5px solid #fecaca;border-radius:var(--r2);
+  padding:14px 16px;margin-top:14px;
+}
+.danger-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;}
+.danger-list{font-size:12px;color:#7f1d1d;line-height:2;}
+
+/* COPY ALL */
+.copy-all-bar{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r2);padding:14px 16px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+}
+.copy-all-text{font-size:13px;color:var(--text2);}
+.copy-all-text strong{color:var(--navy);}
+
+/* RESPONSIVE */
+@media(max-width:400px){
+  .hdr-name{font-size:15px;}
+  .docx-features{grid-template-columns:1fr;}
+  .step span{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────── -->
+<div class="hdr">
+<div class="hdr-inner">
+  <div class="hdr-top">
+    <div class="hdr-icon">🏥</div>
+    <div class="hdr-words">
+      <div class="hdr-name">Chacha Nehru Bal Chikitsalaya</div>
+      <div class="hdr-sub">Geeta Colony, Delhi 110031 · NICU, Department of Paediatrics</div>
+      <div class="hdr-chip">⚕ Discharge Summary Generator</div>
+    </div>
+  </div>
+  <!-- API key row -->
+  <div class="api-wrap">
+    <label>API Key</label>
+    <input class="api-input" type="password" id="apiKey" placeholder="sk-ant-api03-…" autocomplete="off" inputmode="text">
+    <div class="api-dot" id="apiDot"></div>
+  </div>
+  <!-- Steps -->
+  <div class="steps" style="margin-top:12px;">
+    <div class="step on" id="s1"><div class="step-dot" id="sd1">1</div><span>Upload</span></div>
+    <div class="step" id="s2"><div class="step-dot" id="sd2">2</div><span>Analyse</span></div>
+    <div class="step" id="s3"><div class="step-dot" id="sd3">3</div><span>Download</span></div>
+  </div>
+</div>
+</div>
+
+<!-- ── MAIN ─────────────────────────────────────────────────── -->
+<div class="main">
+
+<!-- SCREEN 1: UPLOAD -->
+<div class="screen on" id="sc-upload">
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title">📋 How to Use</div>
+    <div class="card-desc" style="margin-top:6px;">
+      Enter your Anthropic API key above · Photograph every sheet of the case file · Tap Analyse · Copy the 6 portal texts and download the Word document.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📸 Upload Case File Photos</div>
+    <div class="card-desc" style="margin-bottom:14px;">Photograph all pages clearly. More pages = better accuracy.</div>
+
+    <!-- hidden inputs -->
+    <input type="file" id="fileInCamera" multiple accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="fileInGallery" multiple accept="image/*" style="display:none">
+
+    <div class="upload-btn-row">
+      <button class="upload-btn" id="btnCamera" type="button">
+        <span class="ubtn-icon">📷</span>
+        <span class="ubtn-label">Take Photo</span>
+        <span class="ubtn-sub">Open camera</span>
+      </button>
+      <button class="upload-btn" id="btnGallery" type="button">
+        <span class="ubtn-icon">🖼️</span>
+        <span class="ubtn-label">Choose Files</span>
+        <span class="ubtn-sub">Gallery or Files app</span>
+      </button>
+    </div>
+
+    <div class="tag-row" style="margin-top:14px;">
+      <span class="tag">Case Record Sheet</span>
+      <span class="tag">Mother Info Sheet</span>
+      <span class="tag">SNAPPE-II Score</span>
+      <span class="tag">CNBC-75 Progress Notes</span>
+      <span class="tag">Treatment Orders</span>
+      <span class="tag">Lab Reports</span>
+      <span class="tag">Radiology</span>
+      <span class="tag">Fenton Chart</span>
+    </div>
+
+    <div class="prev-grid" id="prevGrid"></div>
+    <div class="prev-count" id="prevCount" style="display:none;"></div>
+    <div class="err-box" id="errBox"><div class="err-title">⚠ Error</div><div class="err-msg" id="errMsg"></div></div>
+    <button class="btn btn-navy" id="analyseBtn" disabled>🔍 Analyse &amp; Generate Discharge Summary</button>
+  </div>
+</div>
+
+<!-- SCREEN 2: PROGRESS -->
+<div class="screen" id="sc-prog">
+  <div class="card">
+    <div class="prog-wrap">
+      <div class="prog-ring"></div>
+      <div class="prog-title" id="progTitle">Sending images to Claude…</div>
+      <div class="prog-sub">Please wait — this may take 30–60 seconds</div>
+      <div class="prog-pages" id="progPages"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: RESULTS -->
+<div class="screen" id="sc-results">
+  <!-- patient strip -->
+  <div class="pt-strip" id="ptStrip"></div>
+
+  <div class="card" style="padding:16px 16px 20px;">
+    <div class="tabs">
+      <div class="tab on" data-tab="portal">📋 Portal Text (6 Boxes)</div>
+      <div class="tab" data-tab="docx">📄 Word Document</div>
+    </div>
+
+    <!-- PORTAL TAB -->
+    <div class="tab-panel on" id="tp-portal">
+      <div class="copy-all-bar">
+        <div class="copy-all-text"><strong>nextgen.ehospital.gov.in</strong> — Copy each section into the matching box. No special characters.</div>
+      </div>
+      <div id="portalBoxes"></div>
+    </div>
+
+    <!-- DOCX TAB -->
+    <div class="tab-panel" id="tp-docx">
+      <div class="docx-panel">
+        <span class="docx-icon">📝</span>
+        <div class="docx-title">Discharge Summary (.docx)</div>
+        <div class="docx-desc">Professional Word document with CNBC hospital header, patient table, all 6 sections, ICD-10 codes, and signature fields.</div>
+        <div class="docx-features">
+          <div class="df-item"><strong>Hospital Header</strong>CNBC letterhead in navy blue</div>
+          <div class="df-item"><strong>Patient Table</strong>All demographics &amp; mother info</div>
+          <div class="df-item"><strong>ICD-10 Codes</strong>All diagnoses with status</div>
+          <div class="df-item"><strong>Treatment Details</strong>Antibiotics, vents, nutrition</div>
+          <div class="df-item"><strong>Clinical Summary</strong>4-paragraph narrative</div>
+          <div class="df-item"><strong>Follow-Up</strong>Medications, ROP, immunisation</div>
+        </div>
+        <button class="btn btn-teal" id="docxBtn">⬇ Download Word Document</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;">
+    <button class="btn btn-outline" id="restartBtn">↺ New Case</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────
+let files = [], analysedData = null;
+
+// ─── API KEY ──────────────────────────────────────────────────
+const apiKeyEl = document.getElementById('apiKey');
+const apiDot   = document.getElementById('apiDot');
+apiKeyEl.value = localStorage.getItem('cnbc_key')||'';
+syncDot();
+apiKeyEl.addEventListener('input',()=>{ localStorage.setItem('cnbc_key',apiKeyEl.value.trim()); syncDot(); });
+function syncDot(){ apiDot.className='api-dot'+(apiKeyEl.value.trim()?'.on':'')||(apiKeyEl.value.trim()?'api-dot on':'api-dot'); }
+function syncDot(){ apiDot.className=apiKeyEl.value.trim()?'api-dot on':'api-dot'; }
+
+// ─── FILE UPLOAD ──────────────────────────────────────────────
+const prevGrid = document.getElementById('prevGrid');
+const prevCount= document.getElementById('prevCount');
+const analyseBtn=document.getElementById('analyseBtn');
+const fileInCamera = document.getElementById('fileInCamera');
+const fileInGallery = document.getElementById('fileInGallery');
+
+document.getElementById('btnCamera').addEventListener('click',()=>fileInCamera.click());
+document.getElementById('btnGallery').addEventListener('click',()=>fileInGallery.click());
+fileInCamera.addEventListener('change',e=>addFiles([...e.target.files]));
+fileInGallery.addEventListener('change',e=>addFiles([...e.target.files]));
+
+function addFiles(newFiles){
+  newFiles.forEach(f=>{ if(!f.type.startsWith('image/'))return; files.push(f); });
+  renderPreviews();
+}
+function renderPreviews(){
+  prevGrid.innerHTML='';
+  files.forEach((f,i)=>{
+    const url=URL.createObjectURL(f);
+    const d=document.createElement('div'); d.className='prev-item';
+    d.innerHTML=`<img src="${url}" loading="lazy"><button class="prev-rm" data-i="${i}">✕</button><div class="prev-lbl">Pg ${i+1}</div>`;
+    prevGrid.appendChild(d);
+  });
+  prevGrid.querySelectorAll('.prev-rm').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation(); files.splice(+b.dataset.i,1); renderPreviews();
+  }));
+  if(files.length){
+    prevCount.style.display='block';
+    prevCount.textContent=files.length+' page'+(files.length>1?'s':'')+' ready — add more or tap Analyse';
+    analyseBtn.disabled=false;
+  } else { prevCount.style.display='none'; analyseBtn.disabled=true; }
+}
+
+// ─── ANALYSE ──────────────────────────────────────────────────
+analyseBtn.addEventListener('click', runAnalysis);
+
+const PROGRESS_MSGS=[
+  'Sending images to Claude…','Reading neonatal case record sheet…',
+  'Extracting mother information and obstetric history…',
+  'Analysing vitals, APGAR, Downes score, SNAPPE-II…',
+  'Processing progress notes and treatment orders…',
+  'Reviewing investigations, radiology, consultations…',
+  'Composing portal text with no special characters…',
+  'Preparing discharge summary — almost done…'
+];
+
+async function runAnalysis(){
+  const key=apiKeyEl.value.trim();
+  if(!key){ showErr('Please enter your Anthropic API key in the bar at the top.'); return; }
+  if(!files.length){ showErr('Please upload at least one image.'); return; }
+  hideErr();
+  setStep(2);
+  show('sc-prog');
+
+  const progTitle=document.getElementById('progTitle');
+  const progPages=document.getElementById('progPages');
+  progPages.textContent=files.length+' pages uploaded';
+  let mi=0;
+  const timer=setInterval(()=>{ if(mi<PROGRESS_MSGS.length-1)mi++; progTitle.textContent=PROGRESS_MSGS[mi]; },3800);
+
+  try{
+    const images=await Promise.all(files.map(toB64));
+
+    const content=[
+      ...images.map(img=>({ type:'image', source:{ type:'base64', media_type:img.type, data:img.data } })),
+      { type:'text', text:'Analyse all these neonatal case file images and extract ALL clinical information. Return ONLY valid JSON as instructed.' }
+    ];
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-opus-4-6',
+        max_tokens:8000,
+        system:SYSTEM_PROMPT,
+        messages:[{role:'user',content}]
+      })
+    });
+
+    clearInterval(timer);
+    const json=await resp.json();
+    if(!resp.ok) throw new Error(json.error?.message||'API error: '+resp.status);
+
+    let raw=(json.content||[]).find(b=>b.type==='text')?.text||'{}';
+    raw=raw.replace(/^```json?\s*/i,'').replace(/```\s*$/i,'').trim();
+    analysedData=JSON.parse(raw);
+    renderResults(analysedData);
+
+  }catch(e){
+    clearInterval(timer);
+    setStep(1); show('sc-upload'); showErr(e.message);
+  }
+}
+
+function toB64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res({data:r.result.split(',')[1],type:file.type});
+    r.onerror=rej; r.readAsDataURL(file);
+  });
+}
+
+// ─── RENDER RESULTS ───────────────────────────────────────────
+function renderResults(d){
+  setStep(3); show('sc-results');
+  const pt=d.patient||{}, av=d.admission_vitals||{};
+
+  // patient strip
+  const strip=document.getElementById('ptStrip');
+  strip.innerHTML=[
+    {l:'Patient',v:pt.name||'Not found'},
+    {l:'CR No',v:pt.cr_number||'—'},
+    {l:'Sex',v:pt.sex||'—'},
+    {l:'Birth Wt',v:pt.birth_weight_g?pt.birth_weight_g+' g':'—'},
+    {l:'Gestation',v:pt.gestational_age_weeks?pt.gestational_age_weeks+' wks':'—'},
+    {l:'Admitted',v:pt.admission_date||'—'},
+    {l:'Discharged',v:pt.discharge_date||'—'},
+  ].map(i=>`<div class="pt-item"><div class="lbl">${i.l}</div><div class="val">${i.v}</div></div>`).join('');
+
+  // portal boxes
+  const portal=d.portal_text||{};
+  const SECTIONS=[
+    {n:1,title:'Diagnosis with ICD-10 Codes',key:'diagnosis',hint:'Primary and all secondary diagnoses with ICD codes. Write "resolved" after each resolved condition.'},
+    {n:2,title:'Condition at Time of Admission',key:'condition_admission',hint:'Date, admission weight, GA, birth history, referral, reason for admission, vitals, Downes score, SNAPPE-II, examination.'},
+    {n:3,title:'Treatment Details',key:'treatment_details',hint:'Respiratory support, vasopressors, antibiotics with doses, TPN/feeds, all medications, procedures, transfusions, key investigations.'},
+    {n:4,title:'Brief Clinical Summary',key:'brief_summary',hint:'3–4 paragraphs: birth history → condition on admission → complications and management → improvement and discharge.'},
+    {n:5,title:'Condition at Time of Discharge',key:'condition_discharge',hint:'Weight, length, HC, all vitals, Downes score, feeding status, oxygen status, neurological exam, general condition.'},
+    {n:6,title:'Follow-Up Instructions',key:'follow_up',hint:'Discharge medications with doses, feeding advice, KMC, NICU OPD Wed & Sat 9AM Room 21 CNBC, ROP, immunisation, danger signs.'},
+  ];
+
+  const container=document.getElementById('portalBoxes');
+  container.innerHTML='';
+  SECTIONS.forEach(s=>{
+    let txt=(portal[s.key]||'').replace(/PARAGRAPH BREAK/gi,'\n\n').trim();
+    const div=document.createElement('div'); div.className='portal-box';
+    div.innerHTML=`
+      <div class="pb-head">
+        <div class="pb-title"><span class="pb-num">${s.n}</span>${s.title}</div>
+        <button class="btn-sm" data-k="${s.key}">Copy</button>
+      </div>
+      <div class="pb-hint">💡 ${s.hint}</div>
+      <textarea class="pb-ta" id="ta-${s.key}" spellcheck="false">${escH(txt)}</textarea>
+      <div class="pb-foot">
+        <span class="pb-chars" id="cc-${s.key}">${txt.length} chars</span>
+        <span style="font-size:11px;color:var(--text3);">Editable before copying</span>
+      </div>`;
+    container.appendChild(div);
+    const ta=div.querySelector('.pb-ta');
+    const cc=div.querySelector('.pb-chars');
+    ta.addEventListener('input',()=>{ const l=ta.value.length; cc.textContent=l+' chars'; cc.className='pb-chars'+(l>4000?' warn-chars':''); });
+    div.querySelector('.btn-sm').addEventListener('click',function(){
+      navigator.clipboard.writeText(document.getElementById('ta-'+s.key).value).then(()=>{
+        this.textContent='✓ Copied'; this.classList.add('copied');
+        setTimeout(()=>{ this.textContent='Copy'; this.classList.remove('copied'); },2000);
+      }).catch(()=>{ document.getElementById('ta-'+s.key).select(); document.execCommand('copy'); });
+    });
+  });
+}
+
+// ─── TABS ─────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on');
+  document.getElementById('tp-'+t.dataset.tab).classList.add('on');
+}));
+
+// ─── DOCX DOWNLOAD ────────────────────────────────────────────
+document.getElementById('docxBtn').addEventListener('click', generateDocx);
+
+async function generateDocx(){
+  if(!analysedData){return;}
+  const btn=document.getElementById('docxBtn');
+  btn.disabled=true; btn.textContent='⏳ Building document…';
+
+  // merge edits from textareas back
+  ['diagnosis','condition_admission','treatment_details','brief_summary','condition_discharge','follow_up'].forEach(k=>{
+    const ta=document.getElementById('ta-'+k);
+    if(ta){ analysedData.portal_text=analysedData.portal_text||{}; analysedData.portal_text[k]=ta.value; }
+  });
+
+  try{
+    const buf=await buildDocx(analysedData);
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const cr=(analysedData.patient?.cr_number||'Summary').replace(/[^a-zA-Z0-9]/g,'_');
+    a.href=url; a.download=`CNBC_NICU_Discharge_${cr}_${today()}.docx`; a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent='✓ Downloaded!';
+    setTimeout(()=>{ btn.textContent='⬇ Download Word Document'; btn.disabled=false; },3000);
+  }catch(e){
+    btn.textContent='⚠ Error: '+e.message; btn.disabled=false;
+  }
+}
+
+function today(){ return new Date().toISOString().slice(0,10); }
+
+// ─── BUILD DOCX ───────────────────────────────────────────────
+async function buildDocx(d){
+  const {
+    Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,
+    AlignmentType,LevelFormat,BorderStyle,WidthType,ShadingType,VerticalAlign
+  }=docx; // global from unpkg CDN
+
+  const NAVY='1A3560', NAVYBG='1A3560', LIGHT='D8E6F5', WHITE='FFFFFF', GREY='666666';
+  const CW=9026; // A4 content width in DXA
+
+  // helpers
+  const tx=(text,opts={})=>new TextRun({text:text||'',font:'Calibri',size:opts.sz||20,bold:opts.bold||false,color:opts.color||'000000',italics:opts.ital||false});
+  const P=(children,opts={})=>new Paragraph({
+    alignment:opts.align||AlignmentType.LEFT,
+    spacing:{before:opts.before||60,after:opts.after||60},
+    children:Array.isArray(children)?children:[children]
+  });
+  const PH=(text)=>new Paragraph({
+    spacing:{before:0,after:0},
+    shading:{type:ShadingType.CLEAR,fill:NAVYBG},
+    children:[tx('  '+text,{bold:true,sz:22,color:WHITE})]
+  });
+  const B=(text)=>new Paragraph({
+    numbering:{reference:'bul',level:0},
+    spacing:{before:40,after:40},
+    children:[tx(text)]
+  });
+  const E=()=>new Paragraph({spacing:{before:60,after:60},children:[tx('')]});
+  const HR=()=>new Paragraph({
+    spacing:{before:100,after:100},
+    border:{bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY,space:1}},
+    children:[tx('')]
+  });
+
+  const BORDERS={top:{style:BorderStyle.SINGLE,size:1,color:'C8D8ED'},bottom:{style:BorderStyle.SINGLE,size:1,color:'C8D8ED'},left:{style:BorderStyle.SINGLE,size:1,color:'C8D8ED'},right:{style:BorderStyle.SINGLE,size:1,color:'C8D8ED'}};
+  const CM={top:80,bottom:80,left:120,right:120};
+
+  const mkRow=(label,value,hdr=false)=>new TableRow({children:[
+    new TableCell({width:{size:3600,type:WidthType.DXA},borders:BORDERS,margins:CM,
+      shading:{type:ShadingType.CLEAR,fill:hdr?NAVYBG:LIGHT},
+      children:[P(tx(label,{bold:true,sz:18,color:hdr?WHITE:NAVY}),{before:0,after:0})]}),
+    new TableCell({width:{size:CW-3600,type:WidthType.DXA},borders:BORDERS,margins:CM,
+      children:[P(tx(value||'',{sz:18}),{before:0,after:0})]})
+  ]});
+
+  const pt=d.patient||{}, mo=d.mother||{}, av=d.admission_vitals||{}, ae=d.admission_exam||{};
+  const dv=d.discharge_vitals||{}, de=d.discharge_exam||{};
+  const diags=d.diagnoses||[], resp=d.respiratory_support||[], abx=d.antibiotics||[];
+  const meds=d.other_medications||[], proc=d.procedures||[], trans=d.transfusions||[];
+  const nutr=d.nutrition||{}, vasp=d.vasopressors||[], cons=d.consultations||[];
+  const portal=d.portal_text||{};
+
+  const summParas=(portal.brief_summary||'').split(/PARAGRAPH BREAK/i).map(s=>s.trim()).filter(Boolean);
+
+  const ptRows=[
+    ['Patient Name',pt.name],['CR Number',pt.cr_number],['Sex',pt.sex],
+    ['Date of Birth',pt.dob],['Birth Weight',(pt.birth_weight_g?pt.birth_weight_g+' g':'')],
+    ['Gestational Age',(pt.gestational_age_weeks?pt.gestational_age_weeks+' weeks':'')],
+    ['Date of Admission',pt.admission_date],['Date of Discharge',pt.discharge_date],
+    ['Ward',pt.ward||'NICU'],['Mode of Delivery',pt.mode_of_delivery],
+    ['Place of Delivery',pt.place_of_delivery],['Referred From',pt.referred_from],
+    ['Mother\'s Name',mo.name],['Mother\'s Age',(mo.age?mo.age+' years':'')],
+    ['Obstetric History',(mo.gravida&&mo.para?'G'+mo.gravida+'P'+mo.para:'')],
+    ['GDM',mo.gdm],['Thyroid Disorder',mo.thyroid_disorder],
+    ['ANC Steroids',mo.anc_steroids],['Amniotic Fluid',mo.amniotic_fluid],
+    ['Indication',mo.indication_lscs_or_delivery]
+  ].filter(r=>r[1]);
+
+  const doc=new Document({
+    numbering:{config:[{reference:'bul',levels:[{level:0,format:LevelFormat.BULLET,text:'\u2022',alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:400,hanging:200}}}}]}]},
+    sections:[{
+      properties:{page:{size:{width:11906,height:16838},margin:{top:720,right:720,bottom:720,left:720}}},
+      children:[
+        // ── HEADER
+        P(tx('CHACHA NEHRU BAL CHIKITSALAYA',{bold:true,sz:32,color:NAVY}),{align:AlignmentType.CENTER,before:0,after:40}),
+        P(tx('Geeta Colony, Delhi - 110031',{sz:22,color:NAVY}),{align:AlignmentType.CENTER,before:0,after:40}),
+        P(tx('Department of Paediatrics \u2014 Neonatal Intensive Care Unit (NICU)',{bold:true,sz:22,color:NAVY}),{align:AlignmentType.CENTER,before:0,after:40}),
+        HR(),
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:80,after:120},shading:{type:ShadingType.CLEAR,fill:NAVYBG},children:[tx('  DISCHARGE SUMMARY  ',{bold:true,sz:28,color:WHITE})]}),
+        E(),
+
+        // ── PATIENT TABLE
+        new Table({width:{size:CW,type:WidthType.DXA},columnWidths:[3600,CW-3600],rows:[mkRow('PATIENT DETAILS','',true),...ptRows.map(r=>mkRow(r[0],r[1]))]}),
+        E(),
+
+        // ── 1. DIAGNOSIS
+        PH('1.  DIAGNOSIS WITH ICD-10 CODES'), E(),
+        ...(diags.length?diags.map(dg=>B(`${dg.diagnosis||''} \u2014 ICD-10: ${dg.icd_code||'Pending'}${dg.status==='Resolved'?' (Resolved)':''}`)):[B(portal.diagnosis||'')]),
+        E(),
+
+        // ── 2. CONDITION ON ADMISSION
+        PH('2.  CONDITION AT TIME OF ADMISSION'), E(),
+        ...[av.weight_kg&&B(`Weight on admission: ${Math.round(av.weight_kg*1000)} g`),
+            pt.gestational_age_weeks&&B(`Gestational age: ${pt.gestational_age_weeks} weeks`),
+            av.hr_bpm&&B(`Heart rate: ${av.hr_bpm} bpm`),
+            av.rr_per_min&&B(`Respiratory rate: ${av.rr_per_min} per min`),
+            av.temperature_c&&B(`Temperature: ${av.temperature_c} \u00b0C`),
+            av.spo2_percent&&B(`SpO\u2082: ${av.spo2_percent}%`),
+            av.crt_sec&&B(`CRT: ${av.crt_sec} sec`),
+            av.apgar_1min&&B(`APGAR: ${av.apgar_1min} at 1 min / ${av.apgar_5min} at 5 min`),
+            av.downes_score&&B(`Downes score on admission: ${av.downes_score}`),
+            av.snappe_ii_score&&B(`SNAPPE-II score: ${av.snappe_ii_score}`),
+            ae.general&&B(`General: ${ae.general}`),
+            ae.cns&&B(`CNS: ${ae.cns}`),
+            ae.cvs&&B(`CVS: ${ae.cvs}`),
+            ae.respiratory&&B(`Respiratory: ${ae.respiratory}`),
+            ae.abdomen&&B(`Abdomen: ${ae.abdomen}`)
+        ].filter(Boolean),
+        E(),
+
+        // ── 3. TREATMENT DETAILS
+        PH('3.  TREATMENT DETAILS'), E(),
+        ...(resp.length?[P(tx('Respiratory Support:',{bold:true,color:NAVY}),{before:80,after:40}),...resp.map(r=>B(`${r.type}: ${r.settings||''} — ${r.from_date||''} to ${r.to_date||''} (${r.duration_days||''} days)`))]:[]),
+        ...(vasp.length?[P(tx('Vasopressors:',{bold:true,color:NAVY}),{before:80,after:40}),...vasp.map(v=>B(`${v.drug}: ${v.dose} \u2014 ${v.from_date||''} to ${v.to_date||''} (${v.duration||''})`))]:[]),
+        ...(abx.length?[P(tx('Antibiotics:',{bold:true,color:NAVY}),{before:80,after:40}),...abx.map(a=>B(`${a.drug} ${a.dose||''} ${a.route||''} ${a.frequency||''} for ${a.course_days||''} days`))]:[]),
+        ...(nutr.tpn_days?[P(tx('Nutrition:',{bold:true,color:NAVY}),{before:80,after:40}),B(`TPN for ${nutr.tpn_days} days — ${nutr.tpn_details||''}`),nutr.enteral_start_day_of_life?B(`Enteral feeds from Day ${nutr.enteral_start_day_of_life} — ${nutr.feed_escalation||''}`):null].filter(Boolean):[]),
+        ...(meds.length?[P(tx('Other Medications:',{bold:true,color:NAVY}),{before:80,after:40}),...meds.map(m=>B(`${m.drug} ${m.dose||''} ${m.route||''} ${m.frequency||''} \u2014 ${m.indication||''} for ${m.duration||''}`))]:[]),
+        ...(proc.length?[P(tx('Procedures:',{bold:true,color:NAVY}),{before:80,after:40}),...proc.map(pr=>B(`${pr.procedure}: ${pr.date||''} \u2014 ${pr.details||''}`))]:[]),
+        ...(trans.length?[P(tx('Transfusions:',{bold:true,color:NAVY}),{before:80,after:40}),...trans.map(t=>B(`${t.component} ${t.volume_ml||''} mL on ${t.date||''} \u2014 ${t.indication||''}`))]:[]),
+        ...(cons.length?[P(tx('Consultations:',{bold:true,color:NAVY}),{before:80,after:40}),...cons.map(c=>B(`${c.specialty} (${c.date||''}): ${c.findings||''} \u2014 ${c.advice||''}`))]:[]),
+        E(),
+
+        // ── 4. BRIEF SUMMARY
+        PH('4.  BRIEF CLINICAL SUMMARY'), E(),
+        ...(summParas.length?summParas.map(s=>new Paragraph({alignment:AlignmentType.JUSTIFIED,spacing:{before:80,after:80},children:[tx(s)]})):[P(tx(portal.brief_summary||''))]),
+        E(),
+
+        // ── 5. CONDITION AT DISCHARGE
+        PH('5.  CONDITION AT TIME OF DISCHARGE'), E(),
+        ...[dv.weight_kg&&B(`Weight: ${Math.round(dv.weight_kg*1000)} g`),
+            dv.length_cm&&B(`Length: ${dv.length_cm} cm`),
+            dv.hc_cm&&B(`Head circumference: ${dv.hc_cm} cm`),
+            dv.hr_bpm&&B(`Heart rate: ${dv.hr_bpm} bpm`),
+            dv.rr_per_min&&B(`Respiratory rate: ${dv.rr_per_min} per min`),
+            dv.temperature_c&&B(`Temperature: ${dv.temperature_c} \u00b0C`),
+            dv.spo2_percent&&B(`SpO\u2082: ${dv.spo2_percent}%`),
+            dv.crt_sec&&B(`CRT: ${dv.crt_sec} sec`),
+            dv.downes_score&&B(`Downes score at discharge: ${dv.downes_score}`),
+            de.feeding_type&&B(`Feeding: ${de.feeding_type} ${de.feeding_volume_ml_per_feed||''} mL per feed, ${de.feeding_frequency||''}`),
+            de.oxygen_status&&B(`Respiratory status: ${de.oxygen_status}`),
+            de.tone&&B(`Tone: ${de.tone}`),
+            de.cry&&B(`Cry: ${de.cry}`),
+            de.activity&&B(`Activity: ${de.activity}`),
+            de.moro_reflex&&B(`Moro reflex: ${de.moro_reflex}`),
+            de.sucking_reflex&&B(`Sucking reflex: ${de.sucking_reflex}`),
+            de.anterior_fontanelle&&B(`Anterior fontanelle: ${de.anterior_fontanelle}`),
+            de.general_condition&&B(`General condition: ${de.general_condition}`)
+        ].filter(Boolean),
+        E(),
+
+        // ── 6. FOLLOW UP
+        PH('6.  FOLLOW-UP INSTRUCTIONS'), E(),
+        ...(meds.filter(m=>m.drug).length?[P(tx('Discharge Medications:',{bold:true,color:NAVY}),{before:60,after:40}),...meds.filter(m=>m.drug).map(m=>B(`${m.drug} ${m.dose||''} ${m.route||''} ${m.frequency||''}`))]:[]),
+        B('NICU OPD Follow-up: Wednesday and Saturday, 9:00 AM, Room 21, CNBC'),
+        de.feeding_type?B(`Feeding: Continue ${de.feeding_type} ${de.feeding_volume_ml_per_feed||''} mL per feed ${de.feeding_frequency||''}`):null,
+        P(tx('Danger Signs \u2014 Bring Baby to Emergency if:',{bold:true,color:'8B0000'}),{before:100,after:40}),
+        B('Poor or absent feeding, not waking for feeds'),
+        B('Fever (temperature above 38 \u00b0C) or hypothermia (below 36.5 \u00b0C)'),
+        B('Apnoea or cessation of breathing, gasping'),
+        B('Cyanosis or bluish discolouration of lips or skin'),
+        B('Seizures or abnormal repetitive jerky movements'),
+        B('Excessive crying, inconsolable irritability'),
+        B('Lethargy or not responding, floppy'),
+        B('Abdominal distension or bile-stained projectile vomiting'),
+        B('Bleeding from umbilicus, skin or any site'),
+        E(), HR(),
+
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:120,after:60},children:[
+          tx('Resident Doctor: ________________________    ',{sz:18}),
+          tx(`Date: ${pt.discharge_date||'____________'}`,{sz:18})
+        ]}),
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:40,after:40},children:[
+          tx('Consultant: ________________________    Seal: ________________________',{sz:18})
+        ]}),
+        E(),
+        new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:60,after:0},children:[
+          tx('CNBC NICU, Geeta Colony, Delhi 110031  |  Emergency: 011-22024940',{sz:16,color:GREY})
+        ]})
+      ].filter(Boolean)
+    }]
+  });
+
+  return Packer.toBuffer(doc);
+}
+
+// ─── RESTART ──────────────────────────────────────────────────
+document.getElementById('restartBtn').addEventListener('click',()=>{
+  files=[]; analysedData=null; renderPreviews();
+  setStep(1); show('sc-upload'); hideErr();
+  fileInCamera.value=''; fileInGallery.value='';
+  window.scrollTo(0,0);
+});
+
+// ─── UI HELPERS ───────────────────────────────────────────────
+function show(id){
+  ['sc-upload','sc-prog','sc-results'].forEach(s=>{
+    document.getElementById(s).classList.toggle('on',s===id);
+  });
+}
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    const s=document.getElementById('s'+i);
+    const d=document.getElementById('sd'+i);
+    s.className='step'+(i===n?' on':i<n?' done':'');
+    d.textContent=i<n?'✓':i;
+  });
+}
+function showErr(msg){ const e=document.getElementById('errBox'); e.classList.add('on'); document.getElementById('errMsg').textContent=msg; }
+function hideErr(){ document.getElementById('errBox').classList.remove('on'); }
+function escH(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── SYSTEM PROMPT ────────────────────────────────────────────
+const SYSTEM_PROMPT=`You are a senior neonatologist AI assistant at Chacha Nehru Bal Chikitsalaya (CNBC), Delhi. Analyse ALL provided neonatal case file images carefully and extract every piece of clinical information.
+
+Return ONLY a single valid JSON object. No markdown, no code blocks, no extra text. Raw JSON only.
+
+Required structure:
+{
+  "patient": {"name":"","cr_number":"","sex":"","dob":"","birth_weight_g":"","gestational_age_weeks":"","admission_date":"","discharge_date":"","ward":"","mode_of_delivery":"","place_of_delivery":"","referred_from":""},
+  "mother": {"name":"","age":"","gravida":"","para":"","gdm":"","thyroid_disorder":"","anc_steroids":"","amniotic_fluid":"","indication_lscs_or_delivery":"","other_maternal_history":""},
+  "admission_vitals": {"weight_kg":"","hr_bpm":"","rr_per_min":"","temperature_c":"","spo2_percent":"","crt_sec":"","bp_mmhg":"","apgar_1min":"","apgar_5min":"","downes_score":"","snappe_ii_score":""},
+  "admission_exam": {"general":"","cns":"","cvs":"","respiratory":"","abdomen":"","skin":"","other":""},
+  "discharge_vitals": {"weight_kg":"","length_cm":"","hc_cm":"","hr_bpm":"","rr_per_min":"","temperature_c":"","spo2_percent":"","crt_sec":"","downes_score":""},
+  "discharge_exam": {"tone":"","cry":"","activity":"","moro_reflex":"","sucking_reflex":"","anterior_fontanelle":"","feeding_type":"","feeding_volume_ml_per_feed":"","feeding_frequency":"","oxygen_status":"","general_condition":""},
+  "diagnoses": [{"diagnosis":"","icd_code":"","status":"Active or Resolved"}],
+  "respiratory_support": [{"type":"","settings":"","from_date":"","to_date":"","duration_days":""}],
+  "vasopressors": [{"drug":"","dose":"","from_date":"","to_date":"","duration":""}],
+  "antibiotics": [{"drug":"","dose":"","route":"","frequency":"","from_date":"","to_date":"","course_days":""}],
+  "other_medications": [{"drug":"","dose":"","route":"","frequency":"","indication":"","duration":""}],
+  "nutrition": {"tpn_days":"","tpn_details":"","enteral_start_day_of_life":"","initial_feed_volume_ml_per_kg":"","feed_escalation":"","discharge_feed_type":"","discharge_feed_volume_ml_per_feed":"","feed_frequency":""},
+  "procedures": [{"procedure":"","date":"","details":""}],
+  "transfusions": [{"component":"","volume_ml":"","date":"","indication":""}],
+  "investigations": {"cbc":[{"date":"","hb_g_dl":"","tlc_per_cumm":"","platelets_lakhs":"","notes":""}],"crp":[{"date":"","value_mg_l":""}],"blood_culture":"","serum_electrolytes":[{"date":"","na":"","k":"","ca":"","mg":""}],"blood_gas":[{"date":"","ph":"","pco2":"","po2":"","hco3":"","be":"","lactate":""}],"lft":"","kft":"","bilirubin":[{"date":"","total_mg_dl":"","direct_mg_dl":""}],"xray_chest":"","usg_cranium":"","other":""},
+  "consultations": [{"specialty":"","date":"","reason":"","findings":"","advice":""}],
+  "portal_text": {"diagnosis":"","condition_admission":"","treatment_details":"","brief_summary":"","condition_discharge":"","follow_up":""}
+}
+
+ABSOLUTE RULES FOR ALL portal_text FIELDS:
+1. ZERO special characters. No full stops. No commas. No semicolons. No colons. No brackets. No parentheses. No slashes. No hyphens. No plus signs. No ampersands. No at signs. No percent signs. No underscores. No asterisks. No hash marks. No dots. Nothing except letters and numbers and spaces.
+2. Write in plain clear English only.
+3. Spell out all abbreviations. Write intravenous not IV. Write intramuscular not IM. Write per kilogram not per kg.
+4. Write symbols as words. Write per instead of slash. Write plus instead of plus sign. Write less than instead of less than sign. Write greater than instead of greater than sign. Write at instead of at sign. Write 2 hourly instead of 2 per hour. Write and instead of ampersand.
+5. Write ICD codes with a space for the dot eg P07 3 not P07.3
+6. Write the word resolved after a diagnosis if it resolved before discharge.
+
+PORTAL TEXT SECTION REQUIREMENTS:
+
+diagnosis: Write primary diagnosis name and ICD code. Then each secondary diagnosis on a new line with its ICD code. Format each as: Name of Condition ICD P07 3. Write the word resolved at end if resolved. Be comprehensive and include all diagnoses found.
+
+condition_admission: Write these in order on separate lines: Date of admission. Weight on admission in grams. Gestational age of baby in weeks and days. Gestational age of mother at delivery. Birth history including mode of delivery and place. Referral history if applicable. Reason for NICU admission. Vitals on admission as heart rate then respiratory rate then temperature then SpO2 then CRT. Downes score on admission. SNAPPE II score. Examination findings on admission. Relevant investigations at outside hospital or at admission.
+
+treatment_details: Write these in order: Respiratory support with type settings and total duration in days. Vasopressors with drug name dose and duration. Antibiotics with drug name dose route frequency and total course duration. Nutrition including TPN duration and enteral feeds with escalation details. All other medications with dose route and frequency. Procedures with dates. Blood transfusions with component volume and date. Key investigation findings.
+
+brief_summary: Write exactly 3 to 4 paragraphs separated by the text PARAGRAPH BREAK on its own line. Paragraph 1 covers birth history delivery mode gestational age maternal history referral. Paragraph 2 covers condition on admission initial management respiratory support. Paragraph 3 covers key complications clinical course investigation findings management. Paragraph 4 covers improvement clinical course discharge planning and condition at discharge.
+
+condition_discharge: Write these in order on separate lines: Weight at discharge in grams. Length at discharge in centimetres. Head circumference at discharge in centimetres. Heart rate. Respiratory rate. Temperature. SpO2. CRT. Downes score at discharge. Feeding type and volume per feed and frequency. Oxygen and respiratory status. Neurological status including tone cry activity Moro reflex sucking reflex anterior fontanelle. Overall general condition.
+
+follow_up: Write these in order: Discharge medications with dose and frequency. Feeding advice with type volume and frequency. KMC advice if applicable. NICU OPD follow up is on Wednesday and Saturday at 9 AM in Room 21 at CNBC. Neurodevelopmental follow up if applicable. ROP screening if applicable with timing. Immunisation advice including BCG Hepatitis B and schedule based on corrected age. Danger signs to watch for including poor feeding fever apnoea cyanosis seizures irritability lethargy abdominal distension bleeding and when to bring baby to emergency.`;
+</script>
+</body>
+</html>
